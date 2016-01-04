@@ -1,0 +1,23 @@
+{
+  "name": "circle-pack",
+  "version": "0.0.1",
+  "authors": [
+    "David Mann (stratlater@gmail.com)"
+  ],
+  "main": "index.html",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "font-awesome": "~4.4.0",
+    "respond": "https://github.com/scottjehl/Respond.git#~1",
+    "jquery": "~2.1.1",
+    "html5shiv": "~3",
+    "shared-styles": "https://github.com/davemn/shared-styles.git"
+  }
+}

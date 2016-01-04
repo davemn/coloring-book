@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="img/favicon.png">
+    <title>My Coloring Book</title>
+    <!-- Bootstrap core CSS + customizations -->
+    <link rel="stylesheet" type="text/css" href="index.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+    <script src="bower_components/html5shiv/dist/html5shiv.js"></script>
+    <script src="bower_components/respond/dest/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <section>
+      <div class='container'>
+        <div class='row'>
+          <div class='col-md-12'>
+            <div class='canvas-container'>
+              <canvas id='canvas-input'></canvas>
+            </div>
+          </div>
+        </div><!-- row -->
+      </div><!-- container -->
+    </section>
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+    <script type="text/javascript" src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/velocity/1.2.3/velocity.js"></script>
+    
+    <script type="text/javascript" src="graph-canvas.js"></script>
+    
+    <script>
+      $(window).load(function() {
+      
+      });
+      
+      // ---
+      
+      $(document).ready(function(evt) {
+        var book = new GraphCanvas.instance({
+          $canvas: $('#canvas-input'),
+          aspectRatio: 16/10
+        });
+        
+        var swatches = {
+          'dark-brown' : '#432c17',
+          'dark-red-brown' : '#572314',
+          'dark-blue' : '#0f5478',
+          'dark-gray-green' : '#4f5a50',
+          'taupe' : '#745d3c',
+          'burnt-sienna' : '#b1460f',
+          'brown' : '#94612e',
+          'purple-pink' : '#a66163',
+          'medium-dark-blue' : '#4278bb',
+          'warm-gray' : '#7a7a7a',
+          'rose-madder' : '#da5652',
+          'orange' : '#f54f1e',
+          'cerulean-blue' : '#468dcb',
+          'seafoam-green' : '#63a182',
+          'medium-gray-green' : '#8f9a79',
+          'raw-sienna' : '#ce8d38',
+          'lime-green' : '#8bb354',
+          'light-green' : '#7ec247',
+          'light-blue' : '#82bcdb',
+          'yellow-ochre' : '#ccb449',
+          'cool-gray' : '#c7cde3',
+          'eggshell-white' : '#e3dbb8',
+          'naples-yellow' : '#f8e142',
+          'peach' : '#f4debf',
+          'white-smoke' : '#eaeaea'
+        };
+        
+        book.setPage(0, function(){
+          this.drawPage();
+          this.drawSwatchGrid(swatches, 8.5, 8.5);
+        });
+      });
+    </script>
+  </body>
+</html>
