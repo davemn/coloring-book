@@ -36,10 +36,128 @@
       }
     );
     
+    // - Bind listeners ---
+    
     $canvas.mousemove({outerThis:this, canvas:this.canvas, ctx:this.ctx}, this._updateMousePos);
+    
+    // $canvas.on('touchstart', this._onTouchStart);
+    this.canvas.addEventListener('touchstart', this);
+    this.canvas.addEventListener('touchend', this);
+    this.canvas.addEventListener('touchcancel', this);
+    this.canvas.addEventListener('touchmove', this);
+    
+    this.touches = [];
         
     // - Draw dynamic elements ---
     // requestAnimationFrame(updateCanvas);
+  };
+  
+  exports.instance.prototype._findTouchById = function(id){
+    for(var i=0; i < this.touches.length; i++){
+      if(id == this.touches[i].identifier)
+        return i;
+    }
+    return -1;
+  };
+  
+  exports.instance.prototype.handleEvent = function(evt){
+    evt.preventDefault();
+    
+    var curTouch = evt.changedTouches;
+    var canvasClientRect = this.canvas.getBoundingClientRect();
+    
+    switch(evt.type){
+      case 'touchstart':
+        for(var touchI=0; touchI < curTouch.length; touchI++){
+          this.touches.push({ 
+            identifier: curTouch[touchI].identifier,
+            pageX:      curTouch[touchI].pageX,
+            pageY:      curTouch[touchI].pageY,
+            clientX:    curTouch[touchI].clientX,
+            clientY:    curTouch[touchI].clientY
+          });
+          
+          var relX = curTouch[touchI].clientX - canvasClientRect.left;
+          var relY = curTouch[touchI].clientY - canvasClientRect.top;
+          
+          // mark start of touch with circle
+          this.ctx.fillStyle = 'red';
+          this.ctx.beginPath();
+          this.ctx.arc(relX, relY, 4, 0,2*Math.PI);
+          this.ctx.fill();
+        }
+        break;
+      case 'touchmove':
+        for(var touchI=0; touchI < curTouch.length; touchI++){
+          var foundIdx = this._findTouchById(curTouch[touchI].identifier);
+          if(foundIdx < 0){
+            console.log('Unable to continue touch!');
+            continue;
+          }
+          
+          var startX = this.touches[foundIdx].clientX - canvasClientRect.left;
+          var startY = this.touches[foundIdx].clientY - canvasClientRect.top;
+          
+          var endX = curTouch[touchI].clientX - canvasClientRect.left;
+          var endY = curTouch[touchI].clientY - canvasClientRect.top;
+          
+          // draw line between touch locations
+          this.ctx.beginPath();
+          this.ctx.moveTo(startX, startY);
+          this.ctx.lineTo(endX, endY);
+          this.ctx.lineWidth = 4;
+          this.ctx.strokeStyle = 'blue';
+          this.ctx.stroke();
+          
+          this.touches.splice(foundIdx, 1, { // replace the touch stored for the ID
+            identifier: curTouch[touchI].identifier,
+            pageX:      curTouch[touchI].pageX,
+            pageY:      curTouch[touchI].pageY,
+            clientX:    curTouch[touchI].clientX,
+            clientY:    curTouch[touchI].clientY
+          });
+        }
+        break;
+      case 'touchend':
+        for(var touchI=0; touchI < curTouch.length; touchI++){
+          var foundIdx = this._findTouchById(curTouch[touchI].identifier);
+          if(foundIdx < 0){
+            console.log('Unable to find touch to end!');
+            continue;
+          }
+          
+          var startX = this.touches[foundIdx].clientX - canvasClientRect.left;
+          var startY = this.touches[foundIdx].clientY - canvasClientRect.top;
+          
+          var endX = curTouch[touchI].clientX - canvasClientRect.left;
+          var endY = curTouch[touchI].clientY - canvasClientRect.top;
+          
+          // mark end of touch with line to final location, then square
+          this.ctx.beginPath();
+          this.ctx.moveTo(startX, startY);
+          this.ctx.lineTo(endX, endY);
+          this.ctx.lineWidth = 4;
+          this.ctx.strokeStyle = 'blue';
+          this.ctx.stroke();
+          
+          this.ctx.fillStyle = 'orange';
+          this.ctx.fillRect(endX-4, endY-4, 8, 8);
+          
+          this.touches.splice(foundIdx, 1); // remove the stored touch
+        }
+        break;
+      case 'touchcancel':
+        for(var touchI=0; touchI < curTouch.length; touchI++){
+          var foundIdx = this._findTouchById(curTouch[touchI].identifier);
+          if(foundIdx < 0){
+            console.log('Unable to find touch to cancel!');
+            continue;
+          }
+          
+          this.touches.splice(foundIdx, 1);
+        }
+        break;
+    }
   };
     
   // Ala http://stackoverflow.com/a/17130415
@@ -56,6 +174,8 @@
     outerThis.relMousePos.x = evt.clientX - rect.left;
     outerThis.relMousePos.y = evt.clientY - rect.top;
   };
+  
+  // - Public API ---
   
   exports.instance.prototype.drawSwatchGrid = function(swatches, x, y){
     this.ctx.save();
