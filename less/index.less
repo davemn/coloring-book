@@ -8,6 +8,8 @@
 /* ================================================================ */
 @import "../bower_components/shared-styles/box-model.less";
 
+canvas { display: block; } // prevent inline, since the browser preserves whitespace around inline elems
+
 .canvas-container {
   // height: 240px; // required!
   position: relative;
@@ -32,6 +34,12 @@ canvas#canvas-input {
 /* ================================================================ */
 @import "../bower_components/shared-styles/theme.less";
 
+.canvas-container {
+  background-image: url('logo-tile.png');
+  background-position: left top;
+  background-repeat: repeat;
+}
+
 canvas#canvas-input {
-  border: 1px solid @white-smoke-luma;
+  border: 1px solid black;
 }
