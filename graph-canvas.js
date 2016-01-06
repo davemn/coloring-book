@@ -52,6 +52,43 @@
     // requestAnimationFrame(updateCanvas);
   };
   
+  exports.instance.prototype.stampBrush = function(start, end, spacing, remainLength){
+    var startX = start[0], startY = start[1];
+    var endX = end[0], endY = end[1];
+    
+    var length = Math.sqrt((endX-startX)*(endX-startX) + (endY-startY)*(endY-startY));
+    
+    if(length > 0){
+      var invLength = 1/length;
+      var normX = (endX-startX) * invLength;
+      var normY = (endY-startY) * invLength;
+      
+      var offsetX = 0, offsetY = 0;
+      
+      var drawLength = length + remainLength;
+      while(drawLength >= spacing){
+        if(remainLength > 0){
+          offsetX += normX * (spacing - remainLength);
+          offsetY += normY * (spacing - remainLength);
+          
+          remainLength = 0;
+        }
+        else {
+          offsetX += normX * spacing;
+          offsetY += normY * spacing;
+        }
+        
+        this.ctx.fillStyle = 'blue';
+        this.ctx.beginPath();
+        this.ctx.arc(startX+offsetX, startY+offsetY, 12, 0,2*Math.PI);
+        this.ctx.fill();
+        
+        drawLength -= spacing;
+      }
+      return drawLength;
+    }
+  };
+  
   exports.instance.prototype.handleEvent = function(evt){
     evt.preventDefault();
     
@@ -93,38 +130,7 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          var remainLength = this.touches[foundId].remainLength;
-          var length = Math.sqrt((endX-startX)*(endX-startX) + (endY-startY)*(endY-startY));
-          
-          if(length > 0){
-            var invLength = 1/length;
-            var normX = (endX-startX) * invLength;
-            var normY = (endY-startY) * invLength;
-            
-            var offsetX = 0, offsetY = 0;
-            
-            var drawLength = length + remainLength;
-            while(drawLength >= this.brushSpacing){
-              if(remainLength > 0){
-                offsetX += normX * (this.brushSpacing - remainLength);
-                offsetY += normY * (this.brushSpacing - remainLength);
-                
-                remainLength = 0;
-              }
-              else {
-                offsetX += normX * this.brushSpacing;
-                offsetY += normY * this.brushSpacing;
-              }
-              
-              this.ctx.fillStyle = 'blue';
-              this.ctx.beginPath();
-              this.ctx.arc(startX+offsetX, startY+offsetY, 12, 0,2*Math.PI);
-              this.ctx.fill();
-              
-              drawLength -= this.brushSpacing;
-            }
-            remainLength = drawLength;
-          }
+          var remainLength = this.stampBrush([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
           
           this.touches[foundId] = { // replace the touch stored for the ID
             remainLength: remainLength,
@@ -149,17 +155,9 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          var length = this.touches[foundId].totalLength;
-          length += Math.sqrt((endX-startX)*(endX-startX) + (endY-startY)*(endY-startY));
+          this.stampBrush([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
           
-          // mark end of touch with line to final location, then square
-          this.ctx.beginPath();
-          this.ctx.moveTo(startX, startY);
-          this.ctx.lineTo(endX, endY);
-          this.ctx.lineWidth = 4;
-          this.ctx.strokeStyle = 'red';
-          this.ctx.stroke();
-          
+          // mark end of touch with square
           this.ctx.fillStyle = 'orange';
           this.ctx.beginPath();
           this.ctx.arc(endX, endY, 8, 0,2*Math.PI);
