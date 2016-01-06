@@ -98,11 +98,9 @@
     
     var curTouch = evt.changedTouches;
     var canvasClientRect = this.canvas.getBoundingClientRect();
-    
+        
     switch(evt.type){
       case 'touchstart':
-        this.ctx.globalCompositeOperation = 'multiply';
-      
         for(var touchI=0; touchI < curTouch.length; touchI++){
           this.touches[curTouch[touchI].identifier] = {
             remainLength: 0, // remaining length in stroke not covered by stamps
@@ -162,10 +160,6 @@
           delete this.touches[foundId]; // remove the stored touch
         }
         
-        // The last active touch ended, so change the blend mode back to default
-        if(Object.keys(this.touches).length === 0)
-          this.ctx.globalCompositeOperation = 'source-over';
-        
         break;
       case 'touchcancel':
         for(var touchI=0; touchI < curTouch.length; touchI++){
@@ -178,12 +172,13 @@
           delete this.touches[foundId];
         }
         
-        // The last active touch was canceled, so change the blend mode back to default
-        if(Object.keys(this.touches).length === 0)
-          this.ctx.globalCompositeOperation = 'source-over';
-        
         break;
     }
+    
+    // Draw the page image last, as a mask
+    this.ctx.globalCompositeOperation = 'multiply';
+    this.ctx.drawImage(this.pageImg, 0, 0);
+    this.ctx.globalCompositeOperation = 'source-over';
   };
     
   // Ala http://stackoverflow.com/a/17130415
