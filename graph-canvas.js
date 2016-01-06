@@ -52,7 +52,14 @@
     // requestAnimationFrame(updateCanvas);
   };
   
-  exports.instance.prototype.stampBrush = function(start, end, spacing, remainLength){
+  exports.instance.prototype.stampBrush = function(x, y){
+    this.ctx.fillStyle = '#7ec247';
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, 12, 0,2*Math.PI);
+    this.ctx.fill();
+  };
+  
+  exports.instance.prototype.stampSegment = function(start, end, spacing, remainLength){
     var startX = start[0], startY = start[1];
     var endX = end[0], endY = end[1];
     
@@ -78,10 +85,7 @@
           offsetY += normY * spacing;
         }
         
-        this.ctx.fillStyle = 'blue';
-        this.ctx.beginPath();
-        this.ctx.arc(startX+offsetX, startY+offsetY, 12, 0,2*Math.PI);
-        this.ctx.fill();
+        this.stampBrush(startX+offsetX, startY+offsetY);
         
         drawLength -= spacing;
       }
@@ -97,6 +101,8 @@
     
     switch(evt.type){
       case 'touchstart':
+        this.ctx.globalCompositeOperation = 'multiply';
+      
         for(var touchI=0; touchI < curTouch.length; touchI++){
           this.touches[curTouch[touchI].identifier] = {
             remainLength: 0, // remaining length in stroke not covered by stamps
@@ -109,11 +115,7 @@
           var relX = curTouch[touchI].clientX - canvasClientRect.left;
           var relY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          // mark start of touch with circle
-          this.ctx.fillStyle = 'red';
-          this.ctx.beginPath();
-          this.ctx.arc(relX, relY, 8, 0,2*Math.PI);
-          this.ctx.fill();
+          this.stampBrush(relX, relY);
         }
         break;
       case 'touchmove':
@@ -130,7 +132,7 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          var remainLength = this.stampBrush([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
+          var remainLength = this.stampSegment([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
           
           this.touches[foundId] = { // replace the touch stored for the ID
             remainLength: remainLength,
@@ -155,16 +157,15 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          this.stampBrush([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
-          
-          // mark end of touch with square
-          this.ctx.fillStyle = 'orange';
-          this.ctx.beginPath();
-          this.ctx.arc(endX, endY, 8, 0,2*Math.PI);
-          this.ctx.fill();
+          this.stampSegment([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
           
           delete this.touches[foundId]; // remove the stored touch
         }
+        
+        // The last active touch ended, so change the blend mode back to default
+        if(Object.keys(this.touches).length === 0)
+          this.ctx.globalCompositeOperation = 'source-over';
+        
         break;
       case 'touchcancel':
         for(var touchI=0; touchI < curTouch.length; touchI++){
@@ -176,6 +177,11 @@
           
           delete this.touches[foundId];
         }
+        
+        // The last active touch was canceled, so change the blend mode back to default
+        if(Object.keys(this.touches).length === 0)
+          this.ctx.globalCompositeOperation = 'source-over';
+        
         break;
     }
   };
