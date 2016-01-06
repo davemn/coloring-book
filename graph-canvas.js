@@ -9,7 +9,7 @@
     this.swatchSize = 20;
     this.swatchPadding = 8;
     
-    this.brushSpacing = 20;
+    this.brushSpacing = 25;
     this.touches = {};
     
     // - Size & setup drawing environment ---
@@ -62,11 +62,11 @@
       case 'touchstart':
         for(var touchI=0; touchI < curTouch.length; touchI++){
           this.touches[curTouch[touchI].identifier] = {
-            totalLength: 0,
-            pageX:       curTouch[touchI].pageX,
-            pageY:       curTouch[touchI].pageY,
-            clientX:     curTouch[touchI].clientX,
-            clientY:     curTouch[touchI].clientY
+            remainLength: 0, // remaining length in stroke not covered by stamps
+            pageX:        curTouch[touchI].pageX,
+            pageY:        curTouch[touchI].pageY,
+            clientX:      curTouch[touchI].clientX,
+            clientY:      curTouch[touchI].clientY
           };
           
           var relX = curTouch[touchI].clientX - canvasClientRect.left;
@@ -93,12 +93,7 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          // TODO track remaining length for multiple simultaneous brush strokes
-          if(!this.remainLength){
-            this.remainLength = 0;
-          }
-          
-          var totalLength = this.touches[foundId].totalLength;
+          var remainLength = this.touches[foundId].remainLength;
           var length = Math.sqrt((endX-startX)*(endX-startX) + (endY-startY)*(endY-startY));
           
           if(length > 0){
@@ -108,13 +103,13 @@
             
             var offsetX = 0, offsetY = 0;
             
-            var drawLength = length + this.remainLength;
+            var drawLength = length + remainLength;
             while(drawLength >= this.brushSpacing){
-              if(this.remainLength > 0){
-                offsetX += normX * (this.brushSpacing - this.remainLength);
-                offsetY += normY * (this.brushSpacing - this.remainLength);
+              if(remainLength > 0){
+                offsetX += normX * (this.brushSpacing - remainLength);
+                offsetY += normY * (this.brushSpacing - remainLength);
                 
-                this.remainLength = 0;
+                remainLength = 0;
               }
               else {
                 offsetX += normX * this.brushSpacing;
@@ -128,46 +123,15 @@
               
               drawLength -= this.brushSpacing;
             }
-            this.remainLength = drawLength;
+            remainLength = drawLength;
           }
           
-          // // o-----o-----------o endpoints
-          // // ----x-----x----x--- brushpoints
-          // 
-          // var nearestBrush = Math.floor(totalLength / this.brushSpacing) * this.brushSpacing;
-          // 
-          // var bias = totalLength - nearestBrush;
-          // 
-          // 
-          // 
-          // var nearestBrush = Math.floor((totalLength + length) / this.brushSpacing) * this.brushSpacing;
-          // 
-          // // if((nearestBrush + length) > (nearestBrush + this.brushSpacing)){ // we've passed a brush location
-          // if(nearestBrush > length){
-          //   var scale = nearestBrush - totalLength;
-          //   
-          //   var normX = (endX - startX)/length;
-          //   var normY = (endY - startY)/length;
-          //   
-          //   normX * scale;
-          //   normY * scale;
-          // }
-          
-          
-          // // draw line between touch locations
-          // this.ctx.beginPath();
-          // this.ctx.moveTo(startX, startY);
-          // this.ctx.lineTo(endX, endY);
-          // this.ctx.lineWidth = 4;
-          // this.ctx.strokeStyle = 'blue';
-          // this.ctx.stroke();
-          
           this.touches[foundId] = { // replace the touch stored for the ID
-            totalLength: totalLength + length,
-            pageX:       curTouch[touchI].pageX,
-            pageY:       curTouch[touchI].pageY,
-            clientX:     curTouch[touchI].clientX,
-            clientY:     curTouch[touchI].clientY
+            remainLength: remainLength,
+            pageX:        curTouch[touchI].pageX,
+            pageY:        curTouch[touchI].pageY,
+            clientX:      curTouch[touchI].clientX,
+            clientY:      curTouch[touchI].clientY
           };
         }
         break;
@@ -193,7 +157,7 @@
           this.ctx.moveTo(startX, startY);
           this.ctx.lineTo(endX, endY);
           this.ctx.lineWidth = 4;
-          this.ctx.strokeStyle = 'blue';
+          this.ctx.strokeStyle = 'red';
           this.ctx.stroke();
           
           this.ctx.fillStyle = 'orange';
