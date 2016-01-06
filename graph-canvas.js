@@ -62,10 +62,11 @@
       case 'touchstart':
         for(var touchI=0; touchI < curTouch.length; touchI++){
           this.touches[curTouch[touchI].identifier] = {
-            pageX:      curTouch[touchI].pageX,
-            pageY:      curTouch[touchI].pageY,
-            clientX:    curTouch[touchI].clientX,
-            clientY:    curTouch[touchI].clientY
+            totalLength: 0,
+            pageX:       curTouch[touchI].pageX,
+            pageY:       curTouch[touchI].pageY,
+            clientX:     curTouch[touchI].clientX,
+            clientY:     curTouch[touchI].clientY
           };
           
           var relX = curTouch[touchI].clientX - canvasClientRect.left;
@@ -74,7 +75,7 @@
           // mark start of touch with circle
           this.ctx.fillStyle = 'red';
           this.ctx.beginPath();
-          this.ctx.arc(relX, relY, 4, 0,2*Math.PI);
+          this.ctx.arc(relX, relY, 8, 0,2*Math.PI);
           this.ctx.fill();
         }
         break;
@@ -92,19 +93,81 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
-          // draw line between touch locations
-          this.ctx.beginPath();
-          this.ctx.moveTo(startX, startY);
-          this.ctx.lineTo(endX, endY);
-          this.ctx.lineWidth = 4;
-          this.ctx.strokeStyle = 'blue';
-          this.ctx.stroke();
+          // TODO track remaining length for multiple simultaneous brush strokes
+          if(!this.remainLength){
+            this.remainLength = 0;
+          }
+          
+          var totalLength = this.touches[foundId].totalLength;
+          var length = Math.sqrt((endX-startX)*(endX-startX) + (endY-startY)*(endY-startY));
+          
+          if(length > 0){
+            var invLength = 1/length;
+            var normX = (endX-startX) * invLength;
+            var normY = (endY-startY) * invLength;
+            
+            var offsetX = 0, offsetY = 0;
+            
+            var drawLength = length + this.remainLength;
+            while(drawLength >= this.brushSpacing){
+              if(this.remainLength > 0){
+                offsetX += normX * (this.brushSpacing - this.remainLength);
+                offsetY += normY * (this.brushSpacing - this.remainLength);
+                
+                this.remainLength = 0;
+              }
+              else {
+                offsetX += normX * this.brushSpacing;
+                offsetY += normY * this.brushSpacing;
+              }
+              
+              this.ctx.fillStyle = 'blue';
+              this.ctx.beginPath();
+              this.ctx.arc(startX+offsetX, startY+offsetY, 12, 0,2*Math.PI);
+              this.ctx.fill();
+              
+              drawLength -= this.brushSpacing;
+            }
+            this.remainLength = drawLength;
+          }
+          
+          // // o-----o-----------o endpoints
+          // // ----x-----x----x--- brushpoints
+          // 
+          // var nearestBrush = Math.floor(totalLength / this.brushSpacing) * this.brushSpacing;
+          // 
+          // var bias = totalLength - nearestBrush;
+          // 
+          // 
+          // 
+          // var nearestBrush = Math.floor((totalLength + length) / this.brushSpacing) * this.brushSpacing;
+          // 
+          // // if((nearestBrush + length) > (nearestBrush + this.brushSpacing)){ // we've passed a brush location
+          // if(nearestBrush > length){
+          //   var scale = nearestBrush - totalLength;
+          //   
+          //   var normX = (endX - startX)/length;
+          //   var normY = (endY - startY)/length;
+          //   
+          //   normX * scale;
+          //   normY * scale;
+          // }
+          
+          
+          // // draw line between touch locations
+          // this.ctx.beginPath();
+          // this.ctx.moveTo(startX, startY);
+          // this.ctx.lineTo(endX, endY);
+          // this.ctx.lineWidth = 4;
+          // this.ctx.strokeStyle = 'blue';
+          // this.ctx.stroke();
           
           this.touches[foundId] = { // replace the touch stored for the ID
-            pageX:      curTouch[touchI].pageX,
-            pageY:      curTouch[touchI].pageY,
-            clientX:    curTouch[touchI].clientX,
-            clientY:    curTouch[touchI].clientY
+            totalLength: totalLength + length,
+            pageX:       curTouch[touchI].pageX,
+            pageY:       curTouch[touchI].pageY,
+            clientX:     curTouch[touchI].clientX,
+            clientY:     curTouch[touchI].clientY
           };
         }
         break;
@@ -122,6 +185,9 @@
           var endX = curTouch[touchI].clientX - canvasClientRect.left;
           var endY = curTouch[touchI].clientY - canvasClientRect.top;
           
+          var length = this.touches[foundId].totalLength;
+          length += Math.sqrt((endX-startX)*(endX-startX) + (endY-startY)*(endY-startY));
+          
           // mark end of touch with line to final location, then square
           this.ctx.beginPath();
           this.ctx.moveTo(startX, startY);
@@ -131,7 +197,9 @@
           this.ctx.stroke();
           
           this.ctx.fillStyle = 'orange';
-          this.ctx.fillRect(endX-4, endY-4, 8, 8);
+          this.ctx.beginPath();
+          this.ctx.arc(endX, endY, 8, 0,2*Math.PI);
+          this.ctx.fill();
           
           delete this.touches[foundId]; // remove the stored touch
         }
