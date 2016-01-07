@@ -21,6 +21,7 @@
         <div class='row'>
           <div class='col-md-12'>
             <div class='canvas-container'>
+              <canvas id='canvas-palette'></canvas>
               <canvas id='canvas-input'></canvas>
             </div>
           </div>
@@ -34,6 +35,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/velocity/1.2.3/velocity.js"></script>
     
     <script type="text/javascript" src="graph-canvas.js"></script>
+    <script type="text/javascript" src="palette-canvas.js"></script>
     
     <script>
       $(window).load(function() {
@@ -43,23 +45,23 @@
       // ---
       
       var swatches = {
-        'dark-brown' : '#432c17',
-        'dark-red-brown' : '#572314',
-        'dark-blue' : '#0f5478',
-        'dark-gray-green' : '#4f5a50',
-        'taupe' : '#745d3c',
-        'burnt-sienna' : '#b1460f',
-        'brown' : '#94612e',
-        'purple-pink' : '#a66163',
-        'medium-dark-blue' : '#4278bb',
-        'warm-gray' : '#7a7a7a',
-        'rose-madder' : '#da5652',
-        'orange' : '#f54f1e',
-        'cerulean-blue' : '#468dcb',
-        'seafoam-green' : '#63a182',
-        'medium-gray-green' : '#8f9a79',
-        'raw-sienna' : '#ce8d38',
-        'lime-green' : '#8bb354',
+        // 'dark-brown' : '#432c17',
+        // 'dark-red-brown' : '#572314',
+        // 'dark-blue' : '#0f5478',
+        // 'dark-gray-green' : '#4f5a50',
+        // 'taupe' : '#745d3c',
+        // 'burnt-sienna' : '#b1460f',
+        // 'brown' : '#94612e',
+        // 'purple-pink' : '#a66163',
+        // 'medium-dark-blue' : '#4278bb',
+        // 'warm-gray' : '#7a7a7a',
+        // 'rose-madder' : '#da5652',
+        // 'orange' : '#f54f1e',
+        // 'cerulean-blue' : '#468dcb',
+        // 'seafoam-green' : '#63a182',
+        // 'medium-gray-green' : '#8f9a79',
+        // 'raw-sienna' : '#ce8d38',
+        // 'lime-green' : '#8bb354',
         'light-green' : '#7ec247',
         'light-blue' : '#82bcdb',
         'yellow-ochre' : '#ccb449',
@@ -75,20 +77,31 @@
           $canvas: $('#canvas-input'),
           aspectRatio: 16/10
         });
-        
+                
         book.loadBrush(function(){
           // offscreen canvas used to color brush before stamping - setup for use with new image
           this.updateBrushCanvas(this.brushImg);
+          palette.setColor(swatches['light-green']);
                   
           this.setPage(0);
         });
                 
         book.loadPage(function(){
           this.drawPage();
-          this.drawSwatchGrid(swatches, 8.5, 8.5);
-          
-          this.setBrushColor(swatches['lime-green']);
         });
+        
+        // ---
+        
+        var palette = new PaletteCanvas.instance({
+          $canvas: $('#canvas-palette'),
+          swatches: swatches
+        });
+        
+        palette.changeColor(function(color){
+          book.setBrushColor(color);
+        });
+        
+        // ---
         
         book.setBrush('brush.png');
       });
