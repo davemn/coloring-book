@@ -42,44 +42,57 @@
       
       // ---
       
+      var swatches = {
+        'dark-brown' : '#432c17',
+        'dark-red-brown' : '#572314',
+        'dark-blue' : '#0f5478',
+        'dark-gray-green' : '#4f5a50',
+        'taupe' : '#745d3c',
+        'burnt-sienna' : '#b1460f',
+        'brown' : '#94612e',
+        'purple-pink' : '#a66163',
+        'medium-dark-blue' : '#4278bb',
+        'warm-gray' : '#7a7a7a',
+        'rose-madder' : '#da5652',
+        'orange' : '#f54f1e',
+        'cerulean-blue' : '#468dcb',
+        'seafoam-green' : '#63a182',
+        'medium-gray-green' : '#8f9a79',
+        'raw-sienna' : '#ce8d38',
+        'lime-green' : '#8bb354',
+        'light-green' : '#7ec247',
+        'light-blue' : '#82bcdb',
+        'yellow-ochre' : '#ccb449',
+        'cool-gray' : '#c7cde3',
+        'eggshell-white' : '#e3dbb8',
+        'naples-yellow' : '#f8e142',
+        'peach' : '#f4debf',
+        'white-smoke' : '#eaeaea'
+      };
+      
       $(document).ready(function(evt) {
         var book = new GraphCanvas.instance({
           $canvas: $('#canvas-input'),
           aspectRatio: 16/10
         });
         
-        var swatches = {
-          'dark-brown' : '#432c17',
-          'dark-red-brown' : '#572314',
-          'dark-blue' : '#0f5478',
-          'dark-gray-green' : '#4f5a50',
-          'taupe' : '#745d3c',
-          'burnt-sienna' : '#b1460f',
-          'brown' : '#94612e',
-          'purple-pink' : '#a66163',
-          'medium-dark-blue' : '#4278bb',
-          'warm-gray' : '#7a7a7a',
-          'rose-madder' : '#da5652',
-          'orange' : '#f54f1e',
-          'cerulean-blue' : '#468dcb',
-          'seafoam-green' : '#63a182',
-          'medium-gray-green' : '#8f9a79',
-          'raw-sienna' : '#ce8d38',
-          'lime-green' : '#8bb354',
-          'light-green' : '#7ec247',
-          'light-blue' : '#82bcdb',
-          'yellow-ochre' : '#ccb449',
-          'cool-gray' : '#c7cde3',
-          'eggshell-white' : '#e3dbb8',
-          'naples-yellow' : '#f8e142',
-          'peach' : '#f4debf',
-          'white-smoke' : '#eaeaea'
-        };
+        book.loadBrush(function(){
+          // offscreen canvas used to color brush before stamping - setup for use with new image
+          this.updateBrushCanvas(this.brushImg);
+          
+          // TODO remove testing
+          this.brushCtx.drawImage(this.brushImg, 0,0);
+          $('.canvas-container').append(this.brush);
         
-        book.setPage(0, function(){
+          this.setPage(0);
+        });
+                
+        book.loadPage(function(){
           this.drawPage();
           this.drawSwatchGrid(swatches, 8.5, 8.5);
         });
+        
+        book.setBrush('brush.png');
       });
     </script>
   </body>

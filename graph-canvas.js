@@ -12,9 +12,15 @@
     this.brushSpacing = 25;
     this.touches = {};
     
+    this.brushImg = new Image();
+    this.pageImg = new Image();
+    
     // - Size & setup drawing environment ---
     this.canvas = $canvas.get(0);
     this.ctx = this.canvas.getContext('2d');
+    
+    this.brush = document.createElement('canvas');
+    this.brushCtx = null;
     
     // ---
     
@@ -96,6 +102,9 @@
   exports.instance.prototype.handleEvent = function(evt){
     evt.preventDefault();
     
+    // draw brush underneath other elements already drawn
+    this.ctx.globalCompositeOperation = 'destination-over';
+    
     var curTouch = evt.changedTouches;
     var canvasClientRect = this.canvas.getBoundingClientRect();
         
@@ -175,9 +184,6 @@
         break;
     }
     
-    // Draw the page image last, as a mask
-    this.ctx.globalCompositeOperation = 'multiply';
-    this.ctx.drawImage(this.pageImg, 0, 0);
     this.ctx.globalCompositeOperation = 'source-over';
   };
     
@@ -235,7 +241,7 @@
     this.ctx.stroke();
     this.ctx.fill();
   };
-  
+    
   exports.instance.prototype.drawPage = function(){
     this.ctx.save();
     this.ctx.lineWidth = 1;
@@ -252,26 +258,39 @@
     this.ctx.restore();
   };
   
-  exports.instance.prototype.setPage = function(pageNo, callback){
-    // this.play(exports.ANIMATION_SHOW); // show loading animation
-    
-    if(!this.pageImg){
-      this.pageImg = new Image();
-      // this.pageImg.addEventListener('load', this);
-    }
-    
-    if(!this.pageCallbacks){ // keep track of listeners bound to our image
-      this.pageCallbacks = {};
-    }
-    
-    // remove old listeners if we're switching back to an image we've encountered before
-    if(this.pageCallbacks[pageNo]){ 
-      this.pageImg.removeEventListener('load', this.pageCallbacks[pageNo]);
-    }
-    this.pageCallbacks[pageNo] = callback.bind(this);
-    
-    this.pageImg.addEventListener('load', this.pageCallbacks[pageNo]);
+  exports.instance.prototype.setBrush = function(brushFilename){
+    this.brushImg.src = brushFilename;
+  };
+  
+  exports.instance.prototype.setPage = function(pageNo){
     this.pageImg.src = 'page-' + ('00' + pageNo).slice(-2) + '.png';
+  };
+  
+  exports.instance.prototype.loadBrush = function(callback){
+    if(this.brushCallback){
+      this.brushImg.removeEventListener('load', this.brushCallback);
+    }
+    
+    this.brushCallback = callback.bind(this);
+    this.brushImg.addEventListener('load', this.brushCallback);    
+  };
+  
+  exports.instance.prototype.loadPage = function(callback){
+    if(this.pageCallback){
+      this.pageImg.removeEventListener('load', this.pageCallback);
+    }
+    
+    this.pageCallback = callback.bind(this);
+    this.pageImg.addEventListener('load', this.pageCallback);
+  };
+  
+  exports.instance.prototype.updateBrushCanvas = function(brushImage){
+    // set canvas size to match newly loaded image size
+    this.brush.width = brushImage.width;
+    this.brush.height = brushImage.height;
+    this.brushCtx = this.brush.getContext('2d');
+    
+    this.brushCtx.clearRect(0,0, this.brush.width,this.brush.height);
   };
   
 })(jQuery, window.GraphCanvas = {});
