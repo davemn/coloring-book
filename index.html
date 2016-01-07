@@ -81,7 +81,7 @@
         book.loadBrush(function(){
           // offscreen canvas used to color brush before stamping - setup for use with new image
           this.updateBrushCanvas(this.brushImg);
-          palette.setColor(swatches['light-green']);
+          palette.setSwatch('light-green');
                   
           this.setPage(0);
         });
@@ -97,7 +97,7 @@
           swatches: swatches
         });
         
-        palette.changeColor(function(color){
+        palette.changeSwatch(function(color){
           book.setBrushColor(color);
         });
         
