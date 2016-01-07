@@ -64,7 +64,13 @@
     // this.ctx.arc(x, y, 12, 0,2*Math.PI);
     // this.ctx.fill();
     
-    this.ctx.drawImage(this.brush, x-(this.brush.width/2), y-(this.brush.height/2));
+    this.ctx.save();
+    
+    this.ctx.translate(x, y);
+    this.ctx.rotate(2 * Math.PI * Math.random());
+    this.ctx.drawImage(this.brush, -this.brush.width/2, -this.brush.height/2);
+    
+    this.ctx.restore();
   };
   
   exports.instance.prototype.stampSegment = function(start, end, spacing, remainLength){
