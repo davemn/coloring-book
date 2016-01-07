@@ -79,17 +79,15 @@
         book.loadBrush(function(){
           // offscreen canvas used to color brush before stamping - setup for use with new image
           this.updateBrushCanvas(this.brushImg);
-          
-          // TODO remove testing
-          this.brushCtx.drawImage(this.brushImg, 0,0);
-          $('.canvas-container').append(this.brush);
-        
+                  
           this.setPage(0);
         });
                 
         book.loadPage(function(){
           this.drawPage();
           this.drawSwatchGrid(swatches, 8.5, 8.5);
+          
+          this.setBrushColor(swatches['lime-green']);
         });
         
         book.setBrush('brush.png');

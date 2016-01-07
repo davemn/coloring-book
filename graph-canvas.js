@@ -59,10 +59,12 @@
   };
   
   exports.instance.prototype.stampBrush = function(x, y){
-    this.ctx.fillStyle = '#7ec247';
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, 12, 0,2*Math.PI);
-    this.ctx.fill();
+    // this.ctx.fillStyle = '#7ec247';
+    // this.ctx.beginPath();
+    // this.ctx.arc(x, y, 12, 0,2*Math.PI);
+    // this.ctx.fill();
+    
+    this.ctx.drawImage(this.brush, x-(this.brush.width/2), y-(this.brush.height/2));
   };
   
   exports.instance.prototype.stampSegment = function(start, end, spacing, remainLength){
@@ -247,12 +249,6 @@
     this.ctx.lineWidth = 1;
     
     this.ctx.clearRect(0,0, this.canvas.width,this.canvas.height);
-    
-    // this.ctx.fillStyle = 'gray';
-    // this.ctx.fillRect(0,0, this.canvas.width,this.canvas.height);
-    
-    // this.ctx.globalCompositeOperation = 'source-over';
-    
     this.ctx.drawImage(this.pageImg, 0, 0);
     
     this.ctx.restore();
@@ -291,6 +287,20 @@
     this.brushCtx = this.brush.getContext('2d');
     
     this.brushCtx.clearRect(0,0, this.brush.width,this.brush.height);
+  };
+  
+  exports.instance.prototype.setBrushColor = function(color){
+    this.brushCtx.clearRect(0,0, this.brush.width,this.brush.height);
+    this.brushCtx.drawImage(this.brushImg, 0,0);
+    // $('.canvas-container').append(this.brush);
+    
+    // Draw a tinted version of the brush image to the offscreen canvas
+    this.brushCtx.save();
+    this.brushCtx.globalCompositeOperation = 'source-atop';
+    this.brushCtx.fillStyle = color;
+    this.brushCtx.fillRect(0,0, this.brush.width,this.brush.height);
+    
+    this.brushCtx.restore();
   };
   
 })(jQuery, window.GraphCanvas = {});
