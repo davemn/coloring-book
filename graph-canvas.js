@@ -254,8 +254,40 @@
     this.ctx.save();
     this.ctx.lineWidth = 1;
     
+    // TODO fit image inside of canvas (ala CSS background-size: contain)
+    
     this.ctx.clearRect(0,0, this.canvas.width,this.canvas.height);
-    this.ctx.drawImage(this.pageImg, 0, 0);
+    // this.ctx.drawImage(this.pageImg, 0, 0);
+    
+    var canvasAspect = this.canvas.width / this.canvas.height;
+    var pageAspect   = this.pageImg.width / this.pageImg.height;
+    
+    var containPageW = this.pageImg.width;
+    var containPageH = this.pageImg.width;
+    
+    // r_image = pageAspect
+    // r_viewport = canvasAspect
+    // w'_image = containPageW
+    // h'_image = containPageH
+    // h_viewport = this.canvas.height
+    // w_viewport = this.canvas.width
+    
+    var letterboxOffsetX = 0, letterboxOffsetY = 0;
+    
+    if(pageAspect <= canvasAspect){ // viewport wider than scaled image
+      containPageW = this.canvas.height * pageAspect;
+      containPageH = this.canvas.height;
+      
+      letterboxOffsetX = (this.canvas.width - containPageW) / 2;
+    }
+    else { // viewport taller than scaled image
+      containPageW = this.canvas.width;
+      containPageH = this.canvas.width / pageAspect;
+      
+      letterboxOffsetY = (this.canvas.height - containPageH) / 2;
+    }
+    
+    this.ctx.drawImage(this.pageImg, letterboxOffsetX, letterboxOffsetY, containPageW, containPageH);
     
     this.ctx.restore();
   };
