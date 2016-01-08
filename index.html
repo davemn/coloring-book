@@ -20,12 +20,24 @@
       <div class='container'>
         <div class='row'>
           <div class='col-md-12'>
-            <div class='canvas-container'>
-              <canvas id='canvas-palette'></canvas>
+            <div class='canvas-container' id='canvas-container-page'>
               <canvas id='canvas-input'></canvas>
             </div>
           </div>
         </div><!-- row -->
+        <div class='row'>
+          <div class='col-md-8'>
+            <div class='canvas-container'>
+              <canvas id='canvas-palette'></canvas>
+            </div>
+          </div>
+          <div class='col-md-2 col-xs-6'>
+            <button type='button' class='btn btn-default btn-block btn-touch' id='btn-prev' disabled><i class='fa fa-arrow-left'></i> Previous Page</button>
+          </div>
+          <div class='col-md-2 col-xs-6'>
+            <button type='button' class='btn btn-default btn-block btn-touch' id='btn-next'>Next Page <i class='fa fa-arrow-right'></i> </button>
+          </div>
+        </div>
       </div><!-- container -->
     </section>
     <!-- Placed at the end of the document so the pages load faster -->
@@ -72,7 +84,11 @@
         'white-smoke' : '#eaeaea'
       };
       
+      var curPage = 0;
+      var pageCount = 2;
+      
       $(document).ready(function(evt) {
+        // - Setup pages and listeners ---
         var book = new GraphCanvas.instance({
           $canvas: $('#canvas-input'),
           aspectRatio: 16/10
@@ -83,14 +99,14 @@
           this.updateBrushCanvas(this.brushImg);
           palette.setSwatch('light-green');
                   
-          this.setPage(0);
+          this.setPage(curPage);
         });
                 
         book.loadPage(function(){
           this.drawPage();
         });
         
-        // ---
+        // - Setup palette and listeners ---
         
         var palette = new PaletteCanvas.instance({
           $canvas: $('#canvas-palette'),
@@ -99,6 +115,33 @@
         
         palette.changeSwatch(function(color){
           book.setBrushColor(color);
+        });
+        
+        // ---
+        
+        $('button#btn-prev').click(function(evt){
+          if(curPage <= 0)
+            return;
+        
+          curPage--;
+          book.setPage(curPage);
+          
+          if(curPage === 0)
+            $(this).prop('disabled', true);
+            
+          $('button#btn-next').prop('disabled', false);
+        });
+        $('button#btn-next').click(function(evt){
+          if(curPage >= pageCount-1)
+            return;
+        
+          curPage++;
+          book.setPage(curPage);
+          
+          if(curPage === pageCount-1)
+            $(this).prop('disabled', true);
+            
+          $('button#btn-prev').prop('disabled', false);
         });
         
         // ---

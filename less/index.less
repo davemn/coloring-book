@@ -15,6 +15,11 @@ canvas { display: block; } // prevent inline, since the browser preserves whites
   position: relative;
 }
 
+.btn-touch {
+  height: 40px; // match swatch size
+  margin-top: 8px; // match swatch padding
+}
+
 canvas#canvas-input {
   // position: absolute;
   // top: -100%; // pct of the height of the container
@@ -39,9 +44,13 @@ canvas#canvas-palette {
 @import "../bower_components/shared-styles/theme.less";
 
 .canvas-container {
-  background-image: url('logo-tile.png');
-  background-position: left top;
-  background-repeat: repeat;
+  background-color: 'white';
+  
+  &#canvas-container-page {
+    background-image: url('logo-tile.png');
+    background-position: left top;
+    background-repeat: repeat;  
+  }
 }
 
 canvas#canvas-input {
