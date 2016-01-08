@@ -20,6 +20,7 @@
       <div class='container'>
         <div class='row'>
           <div class='col-md-12'>
+            <h4 id='storage-notice'>This app uses an <a href='http://caniuse.com/#search=sessionStorage' target='_blank'>widely-supported browser technology </a> to save your artwork. If you're seeing this message, you may be in private browsing mode. Please use standard browsing to keep your artwork safe!</h4>
             <div class='canvas-container' id='canvas-container-page'>
               <canvas id='canvas-input'></canvas>
             </div>
@@ -87,7 +88,30 @@
       var curPage = 0;
       var pageCount = 2;
       
+      /*
+       * From MDN docs: "a browser may support sessionStorage, but not make it available to the scripts on the page."
+       * from https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
+       */
+      function storageAvailable() {
+        try {
+          var storage = window['sessionStorage'],
+          x = '__storage_test__';
+          
+          storage.setItem(x, x);
+          storage.removeItem(x);
+          
+          return true;
+        }
+        catch(e) {
+          return false;
+        }
+      }
+      
       $(document).ready(function(evt) {
+        if(!storageAvailable()){
+          $('#storage-notice').css('display', 'block');
+        }
+      
         // - Setup pages and listeners ---
         var book = new GraphCanvas.instance({
           $canvas: $('#canvas-input'),

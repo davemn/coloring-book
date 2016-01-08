@@ -1,6 +1,25 @@
 (function($, exports){
   exports.ANIMATION_SHOW = 'show';
   
+  /*
+   * From MDN docs: "a browser may support sessionStorage, but not make it available to the scripts on the page."
+   * from https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
+   */
+  function storageAvailable() {
+    try {
+      var storage = window['sessionStorage'],
+      x = '__storage_test__';
+      
+      storage.setItem(x, x);
+      storage.removeItem(x);
+      
+      return true;
+    }
+    catch(e) {
+      return false;
+    }
+  }
+  
   exports.instance = function(opts){
     var $canvas = opts.$canvas;
     
@@ -11,6 +30,9 @@
     
     this.brushSpacing = 25;
     this.touches = {};
+    
+    this.pageNo = 0;
+    this.brushColor = '#fff';
     
     this.brushImg = new Image();
     this.pageImg = new Image();
@@ -58,19 +80,52 @@
     // requestAnimationFrame(updateCanvas);
   };
   
-  exports.instance.prototype.stampBrush = function(x, y){
-    // this.ctx.fillStyle = '#7ec247';
-    // this.ctx.beginPath();
-    // this.ctx.arc(x, y, 12, 0,2*Math.PI);
-    // this.ctx.fill();
-    
+  /*
+   * <stampRotation> and <ignoreHistory> are optional, and used
+   * when re-drawing stamps from history.
+   */
+  exports.instance.prototype.stampBrush = function(x, y, stampRotation, ignoreHistory){
     this.ctx.save();
     
     this.ctx.translate(x, y);
-    this.ctx.rotate(2 * Math.PI * Math.random());
+    
+    var rotation;
+    if(stampRotation)
+      rotation = stampRotation;
+    else
+      rotation = 2 * Math.PI * Math.random();
+    
+    this.ctx.rotate(rotation);
     this.ctx.drawImage(this.brush, -this.brush.width/2, -this.brush.height/2);
     
     this.ctx.restore();
+    
+    if(ignoreHistory)
+      return;
+    
+    if(!storageAvailable()){
+      console.log('Unable to store stamp history!');
+      return;
+    }
+    
+    // Save brush location & rotation to a running list, to be reconstructed at page load
+    var storageKey = 'page-' + ('00' + this.pageNo).slice(-2);
+    
+    var stampHistory = window.sessionStorage.getItem(storageKey);
+    if(!stampHistory)
+      stampHistory = '';
+    
+    var historyEntry = Math.floor(x) + ':' + Math.floor(y) + ':' + rotation.toFixed(4) + ':' + this.brushColor;
+    
+    try {
+      if(stampHistory.length === 0)
+        window.sessionStorage.setItem(storageKey, historyEntry);
+      else
+        window.sessionStorage.setItem(storageKey, stampHistory + ',' + historyEntry);
+    }
+    catch(e){ // setItem() can throw an exception if we run out of space, or have switched to private browsing in iOS Safari
+      window.sessionStorage.removeItem(storageKey);
+    }
   };
   
   exports.instance.prototype.stampSegment = function(start, end, spacing, remainLength){
@@ -212,44 +267,10 @@
   
   // - Public API ---
   
-  exports.instance.prototype.drawSwatchGrid = function(swatches, x, y){
-    this.ctx.save();
-    this.ctx.lineWidth = 1;
-    this.ctx.strokeStyle = 'black';
-    
-    var curPos = {x: x, y: y};
-    
-    var swatchI=0;
-    for(var swatch in swatches){
-      if(swatchI !== 0 && (swatchI%7) === 0){ // start new row
-        curPos.x = x;
-        curPos.y += this.swatchSize + this.swatchPadding;
-      }
-    
-      this.ctx.fillStyle = swatches[swatch];
-      this.ctx.fillRect(curPos.x, curPos.y, this.swatchSize, this.swatchSize);
-      
-      this.ctx.strokeRect(curPos.x, curPos.y, this.swatchSize, this.swatchSize);
-      
-      curPos.x += this.swatchSize + this.swatchPadding;
-     
-      swatchI++;
-    }
-    
-    this.ctx.restore();
-  };
-  
   exports.instance.prototype.play = function(animationName){
     $(this.canvas).dequeue(animationName);
   };
-  
-  exports.instance.prototype.drawCircle = function(x, y, radius){
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, radius, 0,2*Math.PI);
-    this.ctx.stroke();
-    this.ctx.fill();
-  };
-    
+      
   exports.instance.prototype.drawPage = function(){
     this.ctx.save();
     this.ctx.lineWidth = 1;
@@ -290,6 +311,39 @@
     this.ctx.drawImage(this.pageImg, letterboxOffsetX, letterboxOffsetY, containPageW, containPageH);
     
     this.ctx.restore();
+    
+    // - Replay previous stamp history, if any ---
+    if(!storageAvailable())
+      return;
+    
+    this.ctx.globalCompositeOperation = 'destination-over';
+    
+    var storageKey = 'page-' + ('00' + this.pageNo).slice(-2);
+    var stampHistory = window.sessionStorage.getItem(storageKey);
+    
+    if(stampHistory){
+      var currentBrushColor = this.brushColor; // save brush color before we replay history
+      
+      var stamps = stampHistory.split(',');
+      var stamp, x, y, rot, color;
+      
+      for(var stampI=0; stampI < stamps.length; stampI++){
+        stamp = stamps[stampI].split(':');
+        x = stamp[0];
+        y = stamp[1];
+        rot = stamp[2];
+        color = stamp[3];
+        
+        if(color !== this.brushColor)
+          this.setBrushColor(color);
+        
+        this.stampBrush(x, y, rot, true); // true = ignore history
+      }
+      
+      this.setBrushColor(currentBrushColor); // restory brush color from before history replay
+    }
+    
+    this.ctx.globalCompositeOperation = 'source-over'; // back to default
   };
   
   exports.instance.prototype.setBrush = function(brushFilename){
@@ -297,6 +351,7 @@
   };
   
   exports.instance.prototype.setPage = function(pageNo){
+    this.pageNo = pageNo;
     this.pageImg.src = 'page-' + ('00' + pageNo).slice(-2) + '.png';
   };
   
@@ -328,6 +383,8 @@
   };
   
   exports.instance.prototype.setBrushColor = function(color){
+    this.brushColor = color;
+    
     this.brushCtx.clearRect(0,0, this.brush.width,this.brush.height);
     this.brushCtx.drawImage(this.brushImg, 0,0);
     // $('.canvas-container').append(this.brush);
