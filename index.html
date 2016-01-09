@@ -130,6 +130,11 @@
           this.drawPage();
         });
         
+        $(window).resize(function(){
+          book.sizeCanvas();
+          book.drawPage();
+        });
+        
         // - Setup palette and listeners ---
         
         var palette = new PaletteCanvas.instance({

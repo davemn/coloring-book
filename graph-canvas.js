@@ -46,16 +46,8 @@
     
     // ---
     
-    if(opts.aspectRatio){
-      var width = $canvas.parent('.canvas-container').width();
-      var height = width / opts.aspectRatio;
-      
-      // Don't set canvas size using CSS properties! Will result in pixel scaling instead of viewport scaling.
-      // http://stackoverflow.com/a/331462
-      
-      this.canvas.width  = width;
-      this.canvas.height = height;
-    }
+    this.canvasAspect = opts.aspectRatio || 1;
+    this.sizeCanvas();
     
     // - Create animation queues (triggered with play method) ---
   
@@ -78,6 +70,51 @@
             
     // - Draw dynamic elements ---
     // requestAnimationFrame(updateCanvas);
+  };
+  
+  exports.instance.prototype.sizeCanvas = function(){
+    var width = $(this.canvas).parent('.canvas-container').width();
+    var height = width / this.canvasAspect;
+    
+    // - Scale recorded stamp coordinates to new canvas size ---
+    
+    var scaleX = width / this.canvas.width;
+    var scaleY = height / this.canvas.height;
+    
+    var storageKey = 'page-' + ('00' + this.pageNo).slice(-2);
+    var stampHistory = window.sessionStorage.getItem(storageKey);
+    
+    if(stampHistory){
+      var stamps = stampHistory.split(',');
+      var stamp, newStamp, x, y, rot, color;
+      
+      for(var stampI=0; stampI < stamps.length; stampI++){
+        stamp = stamps[stampI].split(':');
+        x = parseFloat(stamp[0]);
+        y = parseFloat(stamp[1]);
+        rot = stamp[2];
+        color = stamp[3];
+        
+        console.log('x := ' + x + ' -> ' + (x*scaleX).toFixed(4) + ', y := ' + y + ' -> ' + (y*scaleY).toFixed(4));
+        
+        // write back to history array
+        newStamp = (x*scaleX).toFixed(4) + ':' + (y*scaleY).toFixed(4) + ':' + rot + ':' + color;
+        stamps[stampI] = newStamp;
+      }
+      // flatten history array, write back to session storage
+      try {
+        window.sessionStorage.setItem(storageKey, stamps.join());
+      }
+      catch(e){ // setItem() can throw an exception if we run out of space, or have switched to private browsing in iOS Safari
+        window.sessionStorage.removeItem(storageKey);
+      }
+    }
+    
+    // Don't set canvas size using CSS properties! Will result in pixel scaling instead of viewport scaling.
+    // http://stackoverflow.com/a/331462
+    
+    this.canvas.width  = width;
+    this.canvas.height = height;
   };
   
   /*
@@ -115,7 +152,7 @@
     if(!stampHistory)
       stampHistory = '';
     
-    var historyEntry = Math.floor(x) + ':' + Math.floor(y) + ':' + rotation.toFixed(4) + ':' + this.brushColor;
+    var historyEntry = x.toFixed(4) + ':' + y.toFixed(4) + ':' + rotation.toFixed(4) + ':' + this.brushColor;
     
     try {
       if(stampHistory.length === 0)
@@ -280,22 +317,16 @@
     this.ctx.clearRect(0,0, this.canvas.width,this.canvas.height);
     // this.ctx.drawImage(this.pageImg, 0, 0);
     
-    var canvasAspect = this.canvas.width / this.canvas.height;
     var pageAspect   = this.pageImg.width / this.pageImg.height;
     
     var containPageW = this.pageImg.width;
     var containPageH = this.pageImg.width;
     
-    // r_image = pageAspect
-    // r_viewport = canvasAspect
-    // w'_image = containPageW
-    // h'_image = containPageH
-    // h_viewport = this.canvas.height
-    // w_viewport = this.canvas.width
+    // Ala http://blog.vjeux.com/2013/image/css-container-and-cover.html
     
     var letterboxOffsetX = 0, letterboxOffsetY = 0;
     
-    if(pageAspect <= canvasAspect){ // viewport wider than scaled image
+    if(pageAspect <= this.canvasAspect){ // viewport wider than scaled image
       containPageW = this.canvas.height * pageAspect;
       containPageH = this.canvas.height;
       
@@ -329,9 +360,9 @@
       
       for(var stampI=0; stampI < stamps.length; stampI++){
         stamp = stamps[stampI].split(':');
-        x = stamp[0];
-        y = stamp[1];
-        rot = stamp[2];
+        x = parseFloat(stamp[0]);
+        y = parseFloat(stamp[1]);
+        rot = parseFloat(stamp[2]);
         color = stamp[3];
         
         if(color !== this.brushColor)
