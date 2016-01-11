@@ -29,10 +29,12 @@
     this.swatchPadding = 8;
     
     this.brushSpacing = 25;
+    this.brushColor = '#fff';
     this.touches = {};
     
     this.pageNo = 0;
-    this.brushColor = '#fff';
+    this.origPage = {}; // the size and position of the page image, after initial scaling
+    this.page = {}; // the current size and position of the scaled page image
     
     this.brushImg = new Image();
     this.pageImg = new Image();
@@ -72,59 +74,118 @@
     // requestAnimationFrame(updateCanvas);
   };
   
+  exports.instance.prototype._containPageInCanvas = function(canvasW, canvasH){
+    var pageAspect = this.pageImg.width / this.pageImg.height;
+    
+    var containPageW, containPageH;
+    
+    // Ala http://blog.vjeux.com/2013/image/css-container-and-cover.html
+    
+    var letterboxOffsetX = 0, letterboxOffsetY = 0;
+    
+    if(pageAspect <= this.canvasAspect){ // viewport wider than scaled image
+      containPageW = canvasH * pageAspect;
+      containPageH = canvasH;
+      
+      letterboxOffsetX = (canvasW - containPageW) / 2;
+    }
+    else { // viewport taller than scaled image
+      containPageW = canvasW;
+      containPageH = canvasW / pageAspect;
+      
+      letterboxOffsetY = (canvasH - containPageH) / 2;
+    }
+    
+    return {
+      originX: letterboxOffsetX,
+      originY: letterboxOffsetY,
+      pageWidth: containPageW,
+      pageHeight: containPageH
+    };
+  };
+  
   exports.instance.prototype.sizeCanvas = function(){
     var width = $(this.canvas).parent('.canvas-container').width();
     var height = width / this.canvasAspect;
-    
-    // - Scale recorded stamp coordinates to new canvas size ---
-    
-    var scaleX = width / this.canvas.width;
-    var scaleY = height / this.canvas.height;
-    
-    var storageKey = 'page-' + ('00' + this.pageNo).slice(-2);
-    var stampHistory = window.sessionStorage.getItem(storageKey);
-    
-    if(stampHistory){
-      var stamps = stampHistory.split(',');
-      var stamp, newStamp, x, y, rot, color;
-      
-      for(var stampI=0; stampI < stamps.length; stampI++){
-        stamp = stamps[stampI].split(':');
-        x = parseFloat(stamp[0]);
-        y = parseFloat(stamp[1]);
-        rot = stamp[2];
-        color = stamp[3];
-        
-        console.log('x := ' + x + ' -> ' + (x*scaleX).toFixed(4) + ', y := ' + y + ' -> ' + (y*scaleY).toFixed(4));
-        
-        // write back to history array
-        newStamp = (x*scaleX).toFixed(4) + ':' + (y*scaleY).toFixed(4) + ':' + rot + ':' + color;
-        stamps[stampI] = newStamp;
-      }
-      // flatten history array, write back to session storage
-      try {
-        window.sessionStorage.setItem(storageKey, stamps.join());
-      }
-      catch(e){ // setItem() can throw an exception if we run out of space, or have switched to private browsing in iOS Safari
-        window.sessionStorage.removeItem(storageKey);
-      }
-    }
     
     // Don't set canvas size using CSS properties! Will result in pixel scaling instead of viewport scaling.
     // http://stackoverflow.com/a/331462
     
     this.canvas.width  = width;
     this.canvas.height = height;
+    
+    this.origPage = this._containPageInCanvas(width, height);
+    this.page     = { // simple clone!
+      originX:    this.origPage.originX,
+      originY:    this.origPage.originY,
+      pageWidth:  this.origPage.pageWidth,
+      pageHeight: this.origPage.pageHeight
+    }
+    
+    if(!storageAvailable())
+      return;
+    
+    if(window.sessionStorage.getItem('orig-page')){ // restore an old drawing session
+      this.origPage = JSON.parse(window.sessionStorage.getItem('orig-page'));
+    }
+    else { // first or new drawing session
+      try {
+        window.sessionStorage.setItem('orig-page', JSON.stringify(this.origPage));
+      }
+      catch(e){ console.log('Unable to store original (scaled) page dimensions!'); }
+    }
   };
-  
+    
+  exports.instance.prototype.resizeCanvas = function(){
+    var width = $(this.canvas).parent('.canvas-container').width();
+    var height = width / this.canvasAspect;
+    
+    // Don't set canvas size using CSS properties! Will result in pixel scaling instead of viewport scaling.
+    // http://stackoverflow.com/a/331462
+    
+    this.canvas.width  = width;
+    this.canvas.height = height;
+    
+    this.page = this._containPageInCanvas(width, height);
+  };
+    
   /*
    * <stampRotation> and <ignoreHistory> are optional, and used
    * when re-drawing stamps from history.
    */
   exports.instance.prototype.stampBrush = function(x, y, stampRotation, ignoreHistory){
+    var origPageX, origPageY; // relative to page, in original page scaling
+    var pageX, pageY; // relative to page, in current scaling
+    var stampX, stampY; // relative to current canvas
+    
+    if(!ignoreHistory){ // we're live
+      pageX = x - this.page.originX;
+      pageY = y - this.page.originY;
+      
+      origPageX = pageX * this.origPage.pageWidth / this.page.pageWidth;
+      origPageY = pageY * this.origPage.pageHeight / this.page.pageHeight;
+      
+      stampX = x;
+      stampY = y;
+    }
+    else { // we're in a replay
+      // stored coords are in un-resized canvas space
+      // convert to resized canvas coords (function of the current viewport)
+      origPageX = x - this.origPage.originX;
+      origPageY = y - this.origPage.originY;
+      
+      pageX = origPageX * this.page.pageWidth / this.origPage.pageWidth;
+      pageY = origPageY * this.page.pageHeight / this.origPage.pageHeight;
+      
+      stampX = this.page.originX + pageX;
+      stampY = this.page.originY + pageY;
+    }
+    
+    // ---
+    
     this.ctx.save();
     
-    this.ctx.translate(x, y);
+    this.ctx.translate(stampX, stampY);
     
     var rotation;
     if(stampRotation)
@@ -152,7 +213,7 @@
     if(!stampHistory)
       stampHistory = '';
     
-    var historyEntry = x.toFixed(4) + ':' + y.toFixed(4) + ':' + rotation.toFixed(4) + ':' + this.brushColor;
+    var historyEntry = (this.origPage.originX+origPageX).toFixed(4) + ':' + (this.origPage.originY+origPageY).toFixed(4) + ':' + rotation.toFixed(4) + ':' + this.brushColor;
     
     try {
       if(stampHistory.length === 0)
@@ -307,39 +368,15 @@
   exports.instance.prototype.play = function(animationName){
     $(this.canvas).dequeue(animationName);
   };
-      
+        
   exports.instance.prototype.drawPage = function(){
     this.ctx.save();
     this.ctx.lineWidth = 1;
     
-    // TODO fit image inside of canvas (ala CSS background-size: contain)
+    // Fit image inside of canvas (ala CSS background-size: contain)
     
     this.ctx.clearRect(0,0, this.canvas.width,this.canvas.height);
-    // this.ctx.drawImage(this.pageImg, 0, 0);
-    
-    var pageAspect   = this.pageImg.width / this.pageImg.height;
-    
-    var containPageW = this.pageImg.width;
-    var containPageH = this.pageImg.width;
-    
-    // Ala http://blog.vjeux.com/2013/image/css-container-and-cover.html
-    
-    var letterboxOffsetX = 0, letterboxOffsetY = 0;
-    
-    if(pageAspect <= this.canvasAspect){ // viewport wider than scaled image
-      containPageW = this.canvas.height * pageAspect;
-      containPageH = this.canvas.height;
-      
-      letterboxOffsetX = (this.canvas.width - containPageW) / 2;
-    }
-    else { // viewport taller than scaled image
-      containPageW = this.canvas.width;
-      containPageH = this.canvas.width / pageAspect;
-      
-      letterboxOffsetY = (this.canvas.height - containPageH) / 2;
-    }
-    
-    this.ctx.drawImage(this.pageImg, letterboxOffsetX, letterboxOffsetY, containPageW, containPageH);
+    this.ctx.drawImage(this.pageImg, this.page.originX, this.page.originY, this.page.pageWidth, this.page.pageHeight);
     
     this.ctx.restore();
     
