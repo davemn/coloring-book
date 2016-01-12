@@ -413,7 +413,7 @@
   
   exports.instance.prototype.setPage = function(pageNo){
     this.pageNo = pageNo;
-    this.pageImg.src = 'page-' + ('00' + pageNo).slice(-2) + '.png';
+    this.pageImg.src = 'assets/page-' + ('00' + pageNo).slice(-2) + '.png';
   };
   
   exports.instance.prototype.loadBrush = function(callback){
