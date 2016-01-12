@@ -113,13 +113,19 @@
     
     this.canvas.width  = width;
     this.canvas.height = height;
+  };
+  
+  exports.instance.prototype.sizePage = function(isInit){
+    this.page = this._containPageInCanvas(this.canvas.width, this.canvas.height);
     
-    this.origPage = this._containPageInCanvas(width, height);
-    this.page     = { // simple clone!
-      originX:    this.origPage.originX,
-      originY:    this.origPage.originY,
-      pageWidth:  this.origPage.pageWidth,
-      pageHeight: this.origPage.pageHeight
+    if(!isInit)
+      return;
+    
+    this.origPage = { // simple clone!
+      originX:    this.page.originX,
+      originY:    this.page.originY,
+      pageWidth:  this.page.pageWidth,
+      pageHeight: this.page.pageHeight
     }
     
     if(!storageAvailable())
@@ -134,19 +140,6 @@
       }
       catch(e){ console.log('Unable to store original (scaled) page dimensions!'); }
     }
-  };
-    
-  exports.instance.prototype.resizeCanvas = function(){
-    var width = $(this.canvas).parent('.canvas-container').width();
-    var height = width / this.canvasAspect;
-    
-    // Don't set canvas size using CSS properties! Will result in pixel scaling instead of viewport scaling.
-    // http://stackoverflow.com/a/331462
-    
-    this.canvas.width  = width;
-    this.canvas.height = height;
-    
-    this.page = this._containPageInCanvas(width, height);
   };
     
   /*

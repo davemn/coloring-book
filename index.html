@@ -87,6 +87,7 @@
       
       var curPage = 0;
       var pageCount = 2;
+      var isInitPage = true;
       
       /*
        * From MDN docs: "a browser may support sessionStorage, but not make it available to the scripts on the page."
@@ -127,11 +128,19 @@
         });
                 
         book.loadPage(function(){
+          if(isInitPage){
+            this.sizePage(isInitPage);
+            isInitPage = false;
+          }
+          else
+            this.sizePage();
+          
           this.drawPage();
         });
         
         $(window).resize(function(){
-          book.resizeCanvas();
+          book.sizeCanvas();
+          book.sizePage();
           book.drawPage();
         });
         
