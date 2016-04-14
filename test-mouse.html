@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Coloring Book</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css">
+    <style>
+      canvas { 
+        display: block; 
+        border: 1px solid black;
+      }
+
+      .canvas-container {
+        position: relative;
+        display: block;
+        width: 128px;
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <div class='container'>
+        <div class='row'>
+          <div class='col-md-12'>
+            <div class='canvas-container'>
+              <canvas id='canvas-touch'></canvas>
+            </div>
+          </div>
+        </div>
+      </div><!-- container -->
+    </section>
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
+
+    <script>
+      (function(exports, $){
+        function resize(canvas, canvasAspect){
+          var width = $(canvas).parent('.canvas-container').width();
+          var height = width / canvasAspect;
+          
+          // Don't set canvas size using CSS properties! Will result in pixel scaling instead of viewport scaling.
+          // http://stackoverflow.com/a/331462
+          
+          canvas.width  = width;
+          canvas.height = height;
+          
+          canvas.halfWidth = width/2;
+          canvas.halfHeight = height/2;
+        }
+        
+        function resizeListener(canvas, canvasAspect){
+          return function(evt){
+            resize(canvas, canvasAspect);
+          }
+        }
+      
+        exports.setup = function(canvasElemSel, aspect){
+          var canvas = $(canvasElemSel).get(0);
+          var ctx = canvas.getContext('2d');
+          
+          var canvasAspect = (aspect || 1); // e.g. 16/10
+          resize(canvas, canvasAspect);
+          
+          $(window).resize(resizeListener(canvas, canvasAspect));
+        };
+      })(window.CanvasHelper = {}, jQuery);
+      
+      // ---
+          
+      (function(exports, $){
+        exports.instance = function(opts){
+          this.canvas = $(opts.canvasSelector).get(0);
+          this.ctx = this.canvas.getContext('2d');
+          
+          this.touchId = -1;
+          
+          this.canvas.addEventListener('touchstart', this);
+          this.canvas.addEventListener('touchend', this);
+          this.canvas.addEventListener('touchcancel', this);
+          this.canvas.addEventListener('touchmove', this);
+        };
+        
+        exports.instance.prototype._raycast = function(){
+          
+        };
+        
+        exports.instance.prototype.handleEvent = function(evt){
+          evt.preventDefault();
+          
+          var curTouch = evt.changedTouches;
+          var curSwatchIdx = -1;
+          var canvasClientRect = this.canvas.getBoundingClientRect();
+          
+          switch(evt.type){
+            case 'touchstart':
+              for(var touchI=0; touchI < curTouch.length; touchI++){
+                var relX = curTouch[touchI].clientX - canvasClientRect.left;
+                var relY = curTouch[touchI].clientY - canvasClientRect.top;
+                
+                // if position is inside a swatch, use this ID and no others
+                curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
+                
+                if(curSwatchIdx !== -1){
+                  this.touchId = curTouch[touchI].identifier;
+                  this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
+                  break;
+                }
+              }
+              break;
+            case 'touchmove':
+              // TODO
+          }
+        };
+        
+        exports.instance.prototype._drawCursor = function(){
+          // var cursorPos = { x:this.canvas.halfWidth, y:0 };
+          var cursorPos = { x:0, y:0 };
+          
+          this.ctx.save();
+          this.ctx.translate(this.canvas.halfWidth, this.canvas.halfHeight);
+          this.ctx.scale(1, -1);
+          
+          this.ctx.beginPath();
+          this.ctx.arc(cursorPos.x, cursorPos.y, 8, 0, 2*Math.PI);
+          this.ctx.fill();
+          
+          this.ctx.restore();
+        };
+        
+        exports.instance.prototype.updateAndDraw = function(){
+          this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
+          this.ctx.strokeStyle = 'black';
+          this.ctx.fillStyle = 'red';
+          
+          this._drawCursor();
+        };
+      })(window.InputViz = {}, jQuery);
+      
+      $(document).ready(function(){
+        CanvasHelper.setup('#canvas-touch', 1.0);
+      
+        viz = new InputViz.instance({
+          canvasSelector: '#canvas-touch'
+        });
+        
+        viz.updateAndDraw();
+      });
+    </script>
+  </body>
+</html>

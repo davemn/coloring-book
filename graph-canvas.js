@@ -69,6 +69,12 @@
     this.canvas.addEventListener('touchend', this);
     this.canvas.addEventListener('touchcancel', this);
     this.canvas.addEventListener('touchmove', this);
+    
+    this.canvas.addEventListener('mouseover', this);
+    this.canvas.addEventListener('mousemove', this);
+    this.canvas.addEventListener('mousedown', this);
+    this.canvas.addEventListener('mouseup', this);
+    this.canvas.addEventListener('click', this);
             
     // - Draw dynamic elements ---
     // requestAnimationFrame(updateCanvas);
@@ -261,9 +267,19 @@
     
     var curTouch = evt.changedTouches;
     var canvasClientRect = this.canvas.getBoundingClientRect();
+    
+    console.log(evt.type);
         
     switch(evt.type){
+      case 'mouseover':
+      case 'mousemove':
+      case 'mousedown':
+      case 'mouseup':
+      case 'click':
+        break;
       case 'touchstart':
+        evt.stopPropagation();
+        evt.preventDefault();
         for(var touchI=0; touchI < curTouch.length; touchI++){
           this.touches[curTouch[touchI].identifier] = {
             remainLength: 0, // remaining length in stroke not covered by stamps
@@ -280,6 +296,8 @@
         }
         break;
       case 'touchmove':
+        evt.stopPropagation();
+        evt.preventDefault();
         for(var touchI=0; touchI < curTouch.length; touchI++){
           var foundId = curTouch[touchI].identifier;
           if(!this.touches[foundId]){
@@ -305,6 +323,8 @@
         }
         break;
       case 'touchend':
+        evt.stopPropagation();
+        evt.preventDefault();
         for(var touchI=0; touchI < curTouch.length; touchI++){
           var foundId = curTouch[touchI].identifier;
           if(!this.touches[foundId]){
@@ -325,6 +345,8 @@
         
         break;
       case 'touchcancel':
+        evt.stopPropagation();
+        evt.preventDefault();
         for(var touchI=0; touchI < curTouch.length; touchI++){
           var foundId = curTouch[touchI].identifier;
           if(!this.touches[foundId]){
