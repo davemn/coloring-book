@@ -9756,11 +9756,6 @@ a.infographic.infographic-callout h1:focus {
 .canvas-container {
   background-color: 'white';
 }
-.canvas-container#canvas-container-page {
-  background-image: url('assets/logo-tile.png');
-  background-position: left top;
-  background-repeat: repeat;
-}
 canvas#canvas-input {
   border: 1px solid black;
 }
