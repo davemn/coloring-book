@@ -25,10 +25,10 @@
     
     // - Bind listeners ---
     
-    this.canvas.addEventListener('touchstart', this);
-    this.canvas.addEventListener('touchend', this);
-    this.canvas.addEventListener('touchcancel', this);
-    this.canvas.addEventListener('touchmove', this);
+    this.canvas.addEventListener('pointerdown', this);
+    this.canvas.addEventListener('pointerup', this);
+    this.canvas.addEventListener('pointercancel', this);
+    this.canvas.addEventListener('pointermove', this);
     
     this.drawSwatchGrid();
   };
@@ -56,58 +56,50 @@
   exports.instance.prototype.handleEvent = function(evt){
     evt.preventDefault();
     
-    var curTouch = evt.changedTouches;
     var curSwatchIdx = -1;
     var canvasClientRect = this.canvas.getBoundingClientRect();
     
     switch(evt.type){
-      case 'touchstart':
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          var relX = curTouch[touchI].clientX - canvasClientRect.left;
-          var relY = curTouch[touchI].clientY - canvasClientRect.top;
-          
-          // if position is inside a swatch, use this ID and no others
-          curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
-          
-          if(curSwatchIdx !== -1){
-            this.touchId = curTouch[touchI].identifier;
-            this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
-            break;
-          }
+      case 'pointerdown':
+        var relX = evt.clientX - canvasClientRect.left;
+        var relY = evt.clientY - canvasClientRect.top;
+        
+        // if position is inside a swatch, use this ID and no others
+        curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
+        
+        if(curSwatchIdx !== -1){
+          this.touchId = evt.pointerId;
+          this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
+          break;
         }
         break;
-      case 'touchmove':
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          var foundId = curTouch[touchI].identifier;
-          if(foundId !== this.touchId) // only continue the touch that fell inside a swatch region
-            continue;
-          
-          var relX = curTouch[touchI].clientX - canvasClientRect.left;
-          var relY = curTouch[touchI].clientY - canvasClientRect.top;
-                    
-          curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
-          
-          if(curSwatchIdx !== -1)
-            this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
-        }
+      case 'pointermove':
+        if(evt.pointerId !== this.touchId)
+          break;
+        
+        var relX = evt.clientX - canvasClientRect.left;
+        var relY = evt.clientY - canvasClientRect.top;
+        
+        curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
+        
+        if(curSwatchIdx !== -1)
+          this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
+        
         break;
-      case 'touchend':
-      case 'touchcancel':
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          var foundId = curTouch[touchI].identifier;
-          if(foundId !== this.touchId) // only continue the touch that fell inside a swatch region
-            continue;
-          
-          var relX = curTouch[touchI].clientX - canvasClientRect.left;
-          var relY = curTouch[touchI].clientY - canvasClientRect.top;
-                    
-          curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
-          
-          if(curSwatchIdx !== -1)
-            this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
-          
-          this.touchId = -1;
-        }
+      case 'pointerup':
+      case 'pointercancel':
+        if(evt.pointerId !== this.touchId) // only continue the touch that fell inside a swatch region
+          break;
+        
+        var relX = evt.clientX - canvasClientRect.left;
+        var relY = evt.clientY - canvasClientRect.top;
+        
+        curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
+        
+        if(curSwatchIdx !== -1)
+          this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
+        
+        this.touchId = -1;
         break;
     }
   };

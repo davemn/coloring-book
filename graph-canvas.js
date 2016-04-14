@@ -257,15 +257,10 @@
     // draw brush underneath other elements already drawn
     this.ctx.globalCompositeOperation = 'destination-over';
     
-    var curTouch = evt.changedTouches;
     var canvasClientRect = this.canvas.getBoundingClientRect();
     
-    // console.log(evt.type);
-        
     switch(evt.type){
       case 'pointerdown':
-        // evt.stopPropagation();
-        // evt.preventDefault();
         this.touches[evt.pointerId] = {
           remainLength: 0, // remaining length in stroke not covered by stamps
           pageX:        evt.pageX,
@@ -280,9 +275,6 @@
         this.stampBrush(relX, relY);
         break;
       case 'pointermove':
-        // evt.stopPropagation();
-        // evt.preventDefault();
-        
         var foundTouch = this.touches[evt.pointerId];
         if(!foundTouch)   // move event was not part of a drag (only happens when using a mouse)
           break;
@@ -304,9 +296,6 @@
         };
         break;
       case 'pointerup':
-        // evt.stopPropagation();
-        // evt.preventDefault();
-        
         var foundTouch = this.touches[evt.pointerId];
         
         var startX = foundTouch.clientX - canvasClientRect.left;
@@ -320,8 +309,6 @@
         delete this.touches[evt.pointerId]; // remove the stored touch
         break;
       case 'pointercancel':
-        // evt.stopPropagation();
-        // evt.preventDefault();
         delete this.touches[evt.pointerId];
         break;
     }
