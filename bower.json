@@ -19,5 +19,8 @@
     "jquery": "~2.1.1",
     "html5shiv": "~3",
     "shared-styles": "https://github.com/davemn/shared-styles.git"
+  },
+  "devDependencies": {
+    "pepjs": "~0.4.1"
   }
 }

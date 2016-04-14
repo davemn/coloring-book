@@ -26,7 +26,7 @@
         <div class='row'>
           <div class='col-md-12'>
             <div class='canvas-container'>
-              <canvas id='canvas-touch'></canvas>
+              <canvas id='canvas-touch' touch-action='none'></canvas>
             </div>
           </div>
         </div>
@@ -35,6 +35,7 @@
     <!-- Placed at the end of the document so the pages load faster -->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="bower_components/pepjs/dist/pep.min.js"></script>
 
     <script>
       (function(exports, $){
@@ -70,65 +71,111 @@
       })(window.CanvasHelper = {}, jQuery);
       
       // ---
+      
+      function Pointer(options) {
+        this.x = options.x;
+        this.y = options.y;
+      }
+
+      Pointer.prototype.setTarget = function(options) {
+        this.targetX = options.x;
+        this.targetY = options.y;
+      };
+
+      Pointer.prototype.didReachTarget = function() {
+        this.x = this.targetX;
+        this.y = this.targetY;
+      };
+
+      Pointer.prototype.isDelta = function() {
+        return this.targetX && this.targetY &&
+            (this.x != this.targetX || this.y != this.targetY);
+      };
+      
+      // ---
           
       (function(exports, $){
         exports.instance = function(opts){
           this.canvas = $(opts.canvasSelector).get(0);
           this.ctx = this.canvas.getContext('2d');
           
-          this.touchId = -1;
+          this.pointers = {};
           
-          this.canvas.addEventListener('touchstart', this);
-          this.canvas.addEventListener('touchend', this);
-          this.canvas.addEventListener('touchcancel', this);
-          this.canvas.addEventListener('touchmove', this);
+          this.canvas.addEventListener('pointerdown', this.down.bind(this));
+          this.canvas.addEventListener('pointermove', this.move.bind(this));
+          this.canvas.addEventListener('pointerup', this.up.bind(this));
+          this.canvas.addEventListener('pointercancel', this.up.bind(this));
         };
         
-        exports.instance.prototype._raycast = function(){
-          
+        exports.instance.prototype.down = function(evt){
+          this.pointers[evt.pointerId] = new Pointer({x: event.clientX, y: event.clientY});
+        };
+        exports.instance.prototype.up = function(evt){
+          delete this.pointers[evt.pointerId];
         };
         
-        exports.instance.prototype.handleEvent = function(evt){
-          evt.preventDefault();
-          
-          var curTouch = evt.changedTouches;
-          var curSwatchIdx = -1;
-          var canvasClientRect = this.canvas.getBoundingClientRect();
-          
-          switch(evt.type){
-            case 'touchstart':
-              for(var touchI=0; touchI < curTouch.length; touchI++){
-                var relX = curTouch[touchI].clientX - canvasClientRect.left;
-                var relY = curTouch[touchI].clientY - canvasClientRect.top;
-                
-                // if position is inside a swatch, use this ID and no others
-                curSwatchIdx = this.swatchIdxOfCoords(relX, relY);
-                
-                if(curSwatchIdx !== -1){
-                  this.touchId = curTouch[touchI].identifier;
-                  this.setSwatch(Object.keys(this.swatches)[curSwatchIdx]);
-                  break;
-                }
-              }
-              break;
-            case 'touchmove':
-              // TODO
-          }
+        exports.instance.prototype.move = function(evt){
+          var pointer = this.pointers[evt.pointerId];
+          // Check if there's a pointer that's down.
+          if(pointer)
+            pointer.setTarget({x: evt.clientX, y: evt.clientY});
         };
+        
+        // exports.instance.prototype.handleEvent = function(evt){
+        //   evt.preventDefault();
+        //   
+        //   var curTouch = evt.changedTouches;
+        //   var canvasClientRect = this.canvas.getBoundingClientRect();
+        //   
+        //   switch(evt.type){
+        //     case 'touchstart':
+        //       for(var touchI=0; touchI < curTouch.length; touchI++){
+        //         var relX = curTouch[touchI].clientX - canvasClientRect.left;
+        //         var relY = curTouch[touchI].clientY - canvasClientRect.top;
+        //         
+        //         this.touchId = curTouch[touchI].identifier;
+        //         
+        // 
+        //       }
+        //       break;
+        //     case 'touchmove':
+        //       // TODO
+        //       break;
+        //     case 'touchcancel':
+        //     case 'touchend':
+        //       break;
+        //   }
+        // };
         
         exports.instance.prototype._drawCursor = function(){
-          // var cursorPos = { x:this.canvas.halfWidth, y:0 };
-          var cursorPos = { x:0, y:0 };
-          
-          this.ctx.save();
-          this.ctx.translate(this.canvas.halfWidth, this.canvas.halfHeight);
-          this.ctx.scale(1, -1);
-          
-          this.ctx.beginPath();
-          this.ctx.arc(cursorPos.x, cursorPos.y, 8, 0, 2*Math.PI);
-          this.ctx.fill();
-          
-          this.ctx.restore();
+        //   var canvasClientRect = this.canvas.getBoundingClientRect();
+        //         var relX = curTouch[touchI].clientX - canvasClientRect.left;
+        //         var relY = curTouch[touchI].clientY - canvasClientRect.top;
+        
+          var canvasClientRect = this.canvas.getBoundingClientRect();
+        
+          // Go through all pointers, rendering the last segment.
+          for (var pointerId in this.pointers) {
+            var pointer = this.pointers[pointerId];
+            if (pointer.isDelta()) {
+              var cursorPos = { 
+                x: pointer.targetX - canvasClientRect.left - this.canvas.halfWidth, 
+                y: pointer.targetY - canvasClientRect.top - this.canvas.halfHeight
+              };
+              
+              this.ctx.save();
+              this.ctx.translate(this.canvas.halfWidth, this.canvas.halfHeight);
+              this.ctx.scale(1, -1);
+              
+              this.ctx.beginPath();
+              this.ctx.arc(cursorPos.x, cursorPos.y, 8, 0, 2*Math.PI);
+              this.ctx.fill();
+              
+              this.ctx.restore();
+
+              pointer.didReachTarget();
+            }
+          }
         };
         
         exports.instance.prototype.updateAndDraw = function(){
@@ -137,6 +184,8 @@
           this.ctx.fillStyle = 'red';
           
           this._drawCursor();
+          
+          requestAnimationFrame(this.updateAndDraw);
         };
       })(window.InputViz = {}, jQuery);
       
@@ -147,7 +196,7 @@
           canvasSelector: '#canvas-touch'
         });
         
-        viz.updateAndDraw();
+        requestAnimationFrame(viz.updateAndDraw);
       });
     </script>
   </body>
