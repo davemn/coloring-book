@@ -62,11 +62,11 @@
       
       var swatches = {
         'red': '#D92121',
-        'yellow': '#FAFA37',
         'green': '#5E8C31',
-        'blue-green': '#30BFBF',
         'blue': '#47ABCC',
+        'yellow': '#FAFA37',
         'purple': '#733380',
+        'blue-green': '#30BFBF',
         'red-purple': '#A63A79',
         'gray': '#8B8680',
         'black': '#000000'
@@ -129,6 +129,9 @@
           book.sizeCanvas();
           book.sizePage();
           book.drawPage();
+          
+          palette.sizeCanvas();
+          palette.drawSwatchGrid();
         }.debounce(350));
         
         // - Setup palette and listeners ---

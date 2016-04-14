@@ -297,6 +297,8 @@
         break;
       case 'pointerup':
         var foundTouch = this.touches[evt.pointerId];
+        if(!foundTouch)   // up event was not part of a drag (only happens when using a mouse)
+          break;
         
         var startX = foundTouch.clientX - canvasClientRect.left;
         var startY = foundTouch.clientY - canvasClientRect.top;
