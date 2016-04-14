@@ -104,11 +104,12 @@
           this.canvas.addEventListener('pointerdown', this.down.bind(this));
           this.canvas.addEventListener('pointermove', this.move.bind(this));
           this.canvas.addEventListener('pointerup', this.up.bind(this));
+          this.canvas.addEventListener('pointerleave', this.up.bind(this));
           this.canvas.addEventListener('pointercancel', this.up.bind(this));
         };
         
         exports.instance.prototype.down = function(evt){
-          this.pointers[evt.pointerId] = new Pointer({x: event.clientX, y: event.clientY});
+          this.pointers[evt.pointerId] = new Pointer({x: evt.clientX, y: evt.clientY});
         };
         exports.instance.prototype.up = function(evt){
           delete this.pointers[evt.pointerId];
@@ -119,6 +120,8 @@
           // Check if there's a pointer that's down.
           if(pointer)
             pointer.setTarget({x: evt.clientX, y: evt.clientY});
+            
+          this._drawCursor();
         };
         
         // exports.instance.prototype.handleEvent = function(evt){
@@ -165,7 +168,7 @@
               
               this.ctx.save();
               this.ctx.translate(this.canvas.halfWidth, this.canvas.halfHeight);
-              this.ctx.scale(1, -1);
+              // this.ctx.scale(1, -1);
               
               this.ctx.beginPath();
               this.ctx.arc(cursorPos.x, cursorPos.y, 8, 0, 2*Math.PI);
@@ -184,8 +187,6 @@
           this.ctx.fillStyle = 'red';
           
           this._drawCursor();
-          
-          requestAnimationFrame(this.updateAndDraw);
         };
       })(window.InputViz = {}, jQuery);
       
@@ -196,7 +197,7 @@
           canvasSelector: '#canvas-touch'
         });
         
-        requestAnimationFrame(viz.updateAndDraw);
+        viz.updateAndDraw();
       });
     </script>
   </body>
