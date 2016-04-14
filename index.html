@@ -22,7 +22,7 @@
           <div class='col-md-12'>
             <h4 id='storage-notice'>This app uses an <a href='http://caniuse.com/#search=sessionStorage' target='_blank'>widely-supported browser technology </a> to save your artwork. If you're seeing this message, you may be in private browsing mode. Please use standard browsing to keep your artwork safe!</h4>
             <div class='canvas-container' id='canvas-container-page'>
-              <canvas id='canvas-input'></canvas>
+              <canvas id='canvas-input' touch-action='none'></canvas>
             </div>
           </div>
         </div><!-- row -->
@@ -43,6 +43,9 @@
     </section>
     <!-- Placed at the end of the document so the pages load faster -->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.js"></script>
+    <script type="text/javascript" src="bower_components/limit.js/limit.js"></script>
+    <script type="text/javascript" src="bower_components/pepjs/dist/pep.min.js"></script>
+    
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/velocity/1.2.3/velocity.js"></script>
@@ -142,7 +145,7 @@
           book.sizeCanvas();
           book.sizePage();
           book.drawPage();
-        });
+        }.debounce(350));
         
         // - Setup palette and listeners ---
         

@@ -23,8 +23,6 @@
   exports.instance = function(opts){
     var $canvas = opts.$canvas;
     
-    this.relMousePos = {x:0, y:0};
-    
     this.swatchSize = 20;
     this.swatchPadding = 8;
     
@@ -63,18 +61,12 @@
     
     // - Bind listeners ---
     
-    $canvas.mousemove({outerThis:this, canvas:this.canvas, ctx:this.ctx}, this._updateMousePos);
-    
-    this.canvas.addEventListener('touchstart', this);
-    this.canvas.addEventListener('touchend', this);
-    this.canvas.addEventListener('touchcancel', this);
-    this.canvas.addEventListener('touchmove', this);
-    
-    this.canvas.addEventListener('mouseover', this);
-    this.canvas.addEventListener('mousemove', this);
-    this.canvas.addEventListener('mousedown', this);
-    this.canvas.addEventListener('mouseup', this);
-    this.canvas.addEventListener('click', this);
+    this.canvas.addEventListener('pointerdown', this);
+    this.canvas.addEventListener('pointerup', this);
+    this.canvas.addEventListener('pointercancel', this);
+    this.canvas.addEventListener('pointermove', this);
+    // this.canvas.addEventListener('pointermove', this.handleEvent.bind(this).throttle(75));
+    this.canvas.addEventListener('pointermove', this);
             
     // - Draw dynamic elements ---
     // requestAnimationFrame(updateCanvas);
@@ -268,116 +260,75 @@
     var curTouch = evt.changedTouches;
     var canvasClientRect = this.canvas.getBoundingClientRect();
     
-    console.log(evt.type);
+    // console.log(evt.type);
         
     switch(evt.type){
-      case 'mouseover':
-      case 'mousemove':
-      case 'mousedown':
-      case 'mouseup':
-      case 'click':
-        break;
-      case 'touchstart':
-        evt.stopPropagation();
-        evt.preventDefault();
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          this.touches[curTouch[touchI].identifier] = {
-            remainLength: 0, // remaining length in stroke not covered by stamps
-            pageX:        curTouch[touchI].pageX,
-            pageY:        curTouch[touchI].pageY,
-            clientX:      curTouch[touchI].clientX,
-            clientY:      curTouch[touchI].clientY
-          };
-          
-          var relX = curTouch[touchI].clientX - canvasClientRect.left;
-          var relY = curTouch[touchI].clientY - canvasClientRect.top;
-          
-          this.stampBrush(relX, relY);
-        }
-        break;
-      case 'touchmove':
-        evt.stopPropagation();
-        evt.preventDefault();
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          var foundId = curTouch[touchI].identifier;
-          if(!this.touches[foundId]){
-            console.log('Unable to continue touch!');
-            continue;
-          }
-          
-          var startX = this.touches[foundId].clientX - canvasClientRect.left;
-          var startY = this.touches[foundId].clientY - canvasClientRect.top;
-          
-          var endX = curTouch[touchI].clientX - canvasClientRect.left;
-          var endY = curTouch[touchI].clientY - canvasClientRect.top;
-          
-          var remainLength = this.stampSegment([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
-          
-          this.touches[foundId] = { // replace the touch stored for the ID
-            remainLength: remainLength,
-            pageX:        curTouch[touchI].pageX,
-            pageY:        curTouch[touchI].pageY,
-            clientX:      curTouch[touchI].clientX,
-            clientY:      curTouch[touchI].clientY
-          };
-        }
-        break;
-      case 'touchend':
-        evt.stopPropagation();
-        evt.preventDefault();
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          var foundId = curTouch[touchI].identifier;
-          if(!this.touches[foundId]){
-            console.log('Unable to find touch to end!');
-            continue;
-          }
-          
-          var startX = this.touches[foundId].clientX - canvasClientRect.left;
-          var startY = this.touches[foundId].clientY - canvasClientRect.top;
-          
-          var endX = curTouch[touchI].clientX - canvasClientRect.left;
-          var endY = curTouch[touchI].clientY - canvasClientRect.top;
-          
-          this.stampSegment([startX, startY], [endX, endY], this.brushSpacing, this.touches[foundId].remainLength);
-          
-          delete this.touches[foundId]; // remove the stored touch
-        }
+      case 'pointerdown':
+        // evt.stopPropagation();
+        // evt.preventDefault();
+        this.touches[evt.pointerId] = {
+          remainLength: 0, // remaining length in stroke not covered by stamps
+          pageX:        evt.pageX,
+          pageY:        evt.pageY,
+          clientX:      evt.clientX,
+          clientY:      evt.clientY
+        };
         
-        break;
-      case 'touchcancel':
-        evt.stopPropagation();
-        evt.preventDefault();
-        for(var touchI=0; touchI < curTouch.length; touchI++){
-          var foundId = curTouch[touchI].identifier;
-          if(!this.touches[foundId]){
-            console.log('Unable to find touch to cancel!');
-            continue;
-          }
-          
-          delete this.touches[foundId];
-        }
+        var relX = evt.clientX - canvasClientRect.left;
+        var relY = evt.clientY - canvasClientRect.top;
         
+        this.stampBrush(relX, relY);
+        break;
+      case 'pointermove':
+        // evt.stopPropagation();
+        // evt.preventDefault();
+        
+        var foundTouch = this.touches[evt.pointerId];
+        if(!foundTouch)   // move event was not part of a drag (only happens when using a mouse)
+          break;
+        
+        var startX = foundTouch.clientX - canvasClientRect.left;
+        var startY = foundTouch.clientY - canvasClientRect.top;
+        
+        var endX = evt.clientX - canvasClientRect.left;
+        var endY = evt.clientY - canvasClientRect.top;
+        
+        var remainLength = this.stampSegment([startX, startY], [endX, endY], this.brushSpacing, foundTouch.remainLength);
+        
+        this.touches[evt.pointerId] = { // replace the touch stored for the ID
+          remainLength: remainLength,
+          pageX:        evt.pageX,
+          pageY:        evt.pageY,
+          clientX:      evt.clientX,
+          clientY:      evt.clientY
+        };
+        break;
+      case 'pointerup':
+        // evt.stopPropagation();
+        // evt.preventDefault();
+        
+        var foundTouch = this.touches[evt.pointerId];
+        
+        var startX = foundTouch.clientX - canvasClientRect.left;
+        var startY = foundTouch.clientY - canvasClientRect.top;
+        
+        var endX = evt.clientX - canvasClientRect.left;
+        var endY = evt.clientY - canvasClientRect.top;
+      
+        this.stampSegment([startX, startY], [endX, endY], this.brushSpacing, foundTouch.remainLength);
+        
+        delete this.touches[evt.pointerId]; // remove the stored touch
+        break;
+      case 'pointercancel':
+        // evt.stopPropagation();
+        // evt.preventDefault();
+        delete this.touches[evt.pointerId];
         break;
     }
     
     this.ctx.globalCompositeOperation = 'source-over';
   };
     
-  // Ala http://stackoverflow.com/a/17130415
-  exports.instance.prototype._updateMousePos = function(evt){
-    // evt.pageX, evt.pageY // use instead of client[X|Y] or offset[X|Y]!
-    // jQuery normalizes page[X|Y], but we need viewport-relative 
-    var outerThis = evt.data.outerThis;
-    var canvas = evt.data.canvas;
-    var ctx = evt.data.ctx;
-    
-    var rect = canvas.getBoundingClientRect();
-    
-    // mouse position relative to the top-left of the canvas
-    outerThis.relMousePos.x = evt.clientX - rect.left;
-    outerThis.relMousePos.y = evt.clientY - rect.top;
-  };
-  
   // - Public API ---
   
   exports.instance.prototype.play = function(animationName){
