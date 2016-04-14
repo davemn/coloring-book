@@ -20,7 +20,7 @@
       <div class='container'>
         <div class='row'>
           <div class='col-md-12'>
-            <h4 id='storage-notice'>This app uses an <a href='http://caniuse.com/#search=sessionStorage' target='_blank'>widely-supported browser technology </a> to save your artwork. If you're seeing this message, you may be in private browsing mode. Please use standard browsing to keep your artwork safe!</h4>
+            <h4 id='storage-notice'>This app uses a <a href='http://caniuse.com/#search=sessionStorage' target='_blank'>widely-supported browser technology</a> to save your artwork. If you're seeing this message, you may be in private browsing mode. Please use standard browsing to keep your artwork safe!</h4>
             <div class='canvas-container' id='canvas-container-page'>
               <canvas id='canvas-input' touch-action='none'></canvas>
             </div>
@@ -39,6 +39,11 @@
             <button type='button' class='btn btn-default btn-block btn-touch' id='btn-next'>Next Page <i class='fa fa-arrow-right'></i> </button>
           </div>
         </div>
+        <div class='row'>
+          <div class='col-md-8 col-md-offset-2'>
+            <button type='button' class='btn btn-default btn-block btn-touch' id='btn-clear'>Erase All Color <small>(This Page Only)</small> <i class='fa fa-eraser'></i> </button>
+          </div>
+        </div>
       </div><!-- container -->
     </section>
     <!-- Placed at the end of the document so the pages load faster -->
@@ -46,8 +51,6 @@
     <script type="text/javascript" src="bower_components/limit.js/limit.js"></script>
     <script type="text/javascript" src="bower_components/pepjs/dist/pep.min.js"></script>
     
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
-
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/velocity/1.2.3/velocity.js"></script>
     
     <script type="text/javascript" src="graph-canvas.js"></script>
@@ -109,7 +112,7 @@
         book.loadBrush(function(){
           // offscreen canvas used to color brush before stamping - setup for use with new image
           this.updateBrushCanvas(this.brushImg);
-          palette.setSwatch('light-green');
+          palette.setSwatch('red');
                   
           this.setPage(curPage);
         });
@@ -170,6 +173,14 @@
             $(this).prop('disabled', true);
             
           $('button#btn-prev').prop('disabled', false);
+        });
+        $('button#btn-clear').click(function(evt){
+          if(!storageAvailable())
+            return;
+          
+          var storageKey = 'page-' + ('00' + curPage).slice(-2);
+          window.sessionStorage.removeItem(storageKey);
+          book.drawPage();
         });
         
         // ---

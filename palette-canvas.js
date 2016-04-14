@@ -10,7 +10,7 @@
     this.swatchSize = 40;
     this.swatchPadding = 8;
     
-    this.origin = [8.5, 8.5];
+    this.origin = [0,0];
     this.touchId = -1;
     
     // - Size & setup drawing environment ---
